@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CandleIQ — Master Candlestick Patterns</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap');
+
+:root {
+  --bg: #080c12;
+  --bg2: #0d1117;
+  --bg3: #111820;
+  --surface: #141b24;
+  --surface2: #1a2332;
+  --border: #1f2d3d;
+  --border2: #243547;
+  --text: #e8f0fe;
+  --text2: #8a9bb0;
+  --text3: #4a5d73;
+  --bull: #00d97e;
+  --bull2: #00a85e;
+  --bull-glow: rgba(0,217,126,0.15);
+  --bear: #ff4757;
+  --bear2: #cc2233;
+  --bear-glow: rgba(255,71,87,0.15);
+  --accent: #3d8eff;
+  --accent2: #2070dd;
+  --accent-glow: rgba(61,142,255,0.15);
+  --gold: #ffd166;
+  --gold2: #e6a800;
+  --purple: #9b59ff;
+  --nav-h: 70px;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; }
+
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100%;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── PAGES ── */
+.page {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: calc(var(--nav-h) + 16px);
+  scroll-behavior: smooth;
+}
+.page.active { display: block; }
+.page::-webkit-scrollbar { width: 3px; }
+.page::-webkit-scrollbar-track { background: transparent; }
+.page::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── BOTTOM NAV ── */
+#bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: rgba(13,17,23,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+}
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text3);
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.nav-btn.active { color: var(--accent); }
+.nav-btn svg { width: 22px; height: 22px; }
+.nav-btn span { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.nav-btn .nav-dot {
+  position: absolute;
+  top: 8px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.nav-btn.active .nav-dot { opacity: 1; }
+
+/* ── GLASS CARD ── */
+.glass {
+  background: rgba(20,27,36,0.7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.glass2 {
+  background: rgba(26,35,50,0.5);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+}
+
+/* ── HOME PAGE ── */
+#page-home { padding: 0; }
+
+.home-header {
+  padding: 56px 20px 24px;
+  background: linear-gradient(180deg, rgba(61,142,255,0.08) 0%, transparent 100%);
+  position: relative;
+  overflow: hidden;
+}
+.home-header::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(61,142,255,0.12) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.home-header::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: -40px;
+  width: 150px; height: 150px;
+  background: radial-gradient(circle, rgba(0,217,126,0.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.app-name { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.app-name span { color: var(--accent); }
+
+.home-greeting { font-size: 13px; color: var(--text2); margin-bottom: 6px; font-family: 'Space Mono', monospace; }
+.home-title { font-size: 28px; font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; }
+.home-title em { font-style: normal; color: var(--gold); }
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 0 20px;
+  margin-top: 20px;
+}
+.stat-card {
+  padding: 14px 12px;
+  text-align: center;
+}
+.stat-val { font-size: 22px; font-weight: 800; font-family: 'Space Mono', monospace; }
+.stat-val.bull { color: var(--bull); }
+.stat-val.gold { color: var(--gold); }
+.stat-val.accent { color: var(--accent); }
+.stat-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; font-weight: 700; }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 20px 12px;
+}
+.section-title { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+.section-badge {
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  color: var(--text3);
+  background: var(--surface);
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 0 20px;
+}
+.cat-card {
+  padding: 18px 16px;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+  position: relative;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.cat-card:active { transform: scale(0.97); }
+.cat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  opacity: 0.06;
+  border-radius: var(--radius);
+}
+.cat-card.single::before { background: var(--accent); }
+.cat-card.double::before { background: var(--bull); }
+.cat-card.triple::before { background: var(--gold); }
+.cat-card.continuation::before { background: var(--purple); }
+
+.cat-icon { font-size: 28px; margin-bottom: 10px; }
+.cat-name { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+.cat-count { font-size: 11px; color: var(--text3); font-family: 'Space Mono', monospace; }
+.cat-arrow { position: absolute; top: 16px; right: 16px; color: var(--text3); font-size: 16px; }
+
+.streak-banner {
+  margin: 14px 20px 0;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(255,209,102,0.08), rgba(255,209,102,0.04));
+  border: 1px solid rgba(255,209,102,0.2);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.streak-fire { font-size: 32px; }
+.streak-info { flex: 1; }
+.streak-num { font-size: 22px; font-weight: 800; color: var(--gold); font-family: 'Space Mono', monospace; }
+.streak-text { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.streak-cta {
+  padding: 8px 14px;
+  background: var(--gold);
+  color: #000;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── LEARN PAGE ── */
+#page-learn { padding: 0; }
+
+.learn-header {
+  padding: 52px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: rgba(8,12,18,0.95);
+  backdrop-filter: blur(20px);
+  z-index: 10;
+}
+.learn-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 12px; }
+
+.tab-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-btn {
+  white-space: nowrap;
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  letter-spacing: 0.02em;
+}
+.tab-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.patterns-list { padding: 14px 20px; display: flex; flex-direction: column; gap: 12px; }
+
+.pattern-card {
+  cursor: pointer;
+  padding: 16px;
+  transition: transform 0.2s, border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pattern-card:active { transform: scale(0.98); }
+.pattern-card.learned { border-color: rgba(0,217,126,0.3); }
+
+.pattern-thumb {
+  width: 64px; height: 64px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.pattern-info { flex: 1; min-width: 0; }
+.pattern-name { font-size: 15px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.01em; }
+.pattern-desc { font-size: 12px; color: var(--text2); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pattern-meta { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.badge {
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.badge.bull { background: rgba(0,217,126,0.12); color: var(--bull); border: 1px solid rgba(0,217,126,0.2); }
+.badge.bear { background: rgba(255,71,87,0.12); color: var(--bear); border: 1px solid rgba(255,71,87,0.2); }
+.badge.neutral { background: rgba(61,142,255,0.12); color: var(--accent); border: 1px solid rgba(61,142,255,0.2); }
+.badge.both { background: rgba(155,89,255,0.12); color: var(--purple); border: 1px solid rgba(155,89,255,0.2); }
+.learned-check { width: 18px; height: 18px; border-radius: 50%; background: var(--bull); display: flex; align-items: center; justify-content: center; color: #000; font-size: 10px; flex-shrink: 0; }
+
+/* ── PATTERN DETAIL MODAL ── */
+#pattern-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  background: var(--bg);
+}
+#pattern-modal.open { display: flex; animation: slideUp 0.35s cubic-bezier(0.16,1,0.3,1); }
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+  padding: 52px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg);
+}
+.modal-back {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.modal-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; flex: 1; }
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.modal-body::-webkit-scrollbar { display: none; }
+
+.detail-chart-wrap {
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.detail-canvas { width: 100%; display: block; }
+
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.info-cell {
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.info-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); font-weight: 700; margin-bottom: 6px; }
+.info-value { font-size: 14px; font-weight: 700; }
+
+.detail-section { }
+.detail-section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); font-weight: 800; margin-bottom: 10px; }
+.detail-text { font-size: 14px; color: var(--text2); line-height: 1.65; }
+
+.signal-box {
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.signal-box.bull { background: rgba(0,217,126,0.07); border: 1px solid rgba(0,217,126,0.2); }
+.signal-box.bear { background: rgba(255,71,87,0.07); border: 1px solid rgba(255,71,87,0.2); }
+.signal-box.neutral { background: rgba(61,142,255,0.07); border: 1px solid rgba(61,142,255,0.2); }
+.signal-icon { font-size: 22px; }
+.signal-content { flex: 1; }
+.signal-title { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+.signal-text { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+.mark-learned-btn {
+  padding: 16px;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.15s, opacity 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  color: #fff;
+  margin-top: 4px;
+}
+.mark-learned-btn:active { transform: scale(0.97); }
+.mark-learned-btn.done { background: linear-gradient(135deg, var(--bull), var(--bull2)); }
+
+.sim-chart-wrap {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.sim-chart-label {
+  padding: 10px 14px;
+  font-size: 11px;
+  color: var(--text3);
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+/* ── PRACTICE PAGE ── */
+#page-practice { padding: 0; }
+
+.practice-header {
+  padding: 52px 20px 20px;
+  background: rgba(8,12,18,0.95);
+  border-bottom: 1px solid var(--border);
+}
+.practice-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+.practice-sub { font-size: 13px; color: var(--text2); }
+
+.quiz-wrap { padding: 20px; }
+
+.quiz-score-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.score-item { text-align: center; }
+.score-num { font-size: 18px; font-weight: 800; font-family: 'Space Mono', monospace; }
+.score-num.bull { color: var(--bull); }
+.score-num.bear { color: var(--bear); }
+.score-num.gold { color: var(--gold); }
+.score-num.accent { color: var(--accent); }
+.score-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); font-weight: 700; margin-top: 2px; }
+
+.quiz-card {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 16px;
+}
+.quiz-chart-area {
+  height: 200px;
+  background: var(--bg2);
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.quiz-chart-canvas { display: block; }
+.quiz-card-footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+.quiz-prompt { font-size: 14px; color: var(--text2); text-align: center; font-weight: 600; }
+.quiz-prompt strong { color: var(--text); }
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.option-btn {
+  padding: 14px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1.3;
+  font-family: 'Syne', sans-serif;
+}
+.option-btn:active:not(:disabled) { transform: scale(0.97); }
+.option-btn.correct { background: rgba(0,217,126,0.15); border-color: var(--bull); color: var(--bull); }
+.option-btn.wrong { background: rgba(255,71,87,0.15); border-color: var(--bear); color: var(--bear); }
+.option-btn:disabled { cursor: default; }
+
+.quiz-reveal {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+.quiz-reveal.show { display: block; }
+.quiz-reveal.correct { background: rgba(0,217,126,0.07); border: 1px solid rgba(0,217,126,0.2); }
+.quiz-reveal.wrong { background: rgba(255,71,87,0.07); border: 1px solid rgba(255,71,87,0.2); }
+.reveal-title { font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+.reveal-text { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+.next-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  margin-top: 12px;
+  display: none;
+  transition: transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  font-family: 'Syne', sans-serif;
+  letter-spacing: 0.02em;
+}
+.next-btn.show { display: block; }
+.next-btn:active { transform: scale(0.97); }
+
+/* ── PROGRESS PAGE ── */
+#page-progress { padding: 0; }
+
+.progress-header {
+  padding: 52px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.progress-title { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+.progress-sub { font-size: 13px; color: var(--text2); }
+
+.progress-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+.big-stat-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.big-stat {
+  padding: 20px 16px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+.big-stat-num { font-size: 36px; font-weight: 800; font-family: 'Space Mono', monospace; }
+.big-stat-num.gold { color: var(--gold); }
+.big-stat-num.bull { color: var(--bull); }
+.big-stat-num.accent { color: var(--accent); }
+.big-stat-num.purple { color: var(--purple); }
+.big-stat-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); font-weight: 700; margin-top: 6px; }
+
+.progress-section-title {
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+}
+.progress-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.prog-item { }
+.prog-item-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.prog-item-name { font-size: 13px; font-weight: 700; }
+.prog-item-pct { font-size: 12px; color: var(--text3); font-family: 'Space Mono', monospace; }
+.prog-bar-bg {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.prog-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
+}
+.prog-bar-fill.accent { background: var(--accent); }
+.prog-bar-fill.bull { background: var(--bull); }
+.prog-bar-fill.gold { background: var(--gold); }
+.prog-bar-fill.purple { background: var(--purple); }
+
+.accuracy-chart-wrap {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.accuracy-ring-wrap { display: flex; align-items: center; gap: 20px; }
+.accuracy-legend { flex: 1; }
+.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.legend-label { font-size: 13px; color: var(--text2); flex: 1; }
+.legend-val { font-size: 13px; font-weight: 700; font-family: 'Space Mono', monospace; }
+
+.reset-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.2s, color 0.2s;
+}
+.reset-btn:active { border-color: var(--bear); color: var(--bear); }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+.pop { animation: pop 0.3s ease; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════════════════ HOME PAGE ════════════════ -->
+<div id="page-home" class="page active">
+  <div class="home-header">
+    <div class="app-logo">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <rect x="4" y="3" width="3" height="14" rx="1" fill="white"/>
+          <rect x="3" y="5" width="5" height="8" rx="0.5" fill="white" opacity="0.4"/>
+          <rect x="13" y="6" width="3" height="10" rx="1" fill="white"/>
+          <rect x="12" y="8" width="5" height="6" rx="0.5" fill="white" opacity="0.4"/>
+          <rect x="8.5" y="1" width="3" height="12" rx="1" fill="white"/>
+          <rect x="7.5" y="3" width="5" height="8" rx="0.5" fill="white" opacity="0.4"/>
+        </svg>
+      </div>
+      <span class="app-name">Candle<span>IQ</span></span>
+    </div>
+    <div class="home-greeting">Good day, trader</div>
+    <div class="home-title">Master Every<br><em>Candlestick Pattern</em></div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card glass">
+      <div class="stat-val bull" id="home-learned">0</div>
+      <div class="stat-lbl">Learned</div>
+    </div>
+    <div class="stat-card glass">
+      <div class="stat-val gold" id="home-streak">0</div>
+      <div class="stat-lbl">Streak</div>
+    </div>
+    <div class="stat-card glass">
+      <div class="stat-val accent" id="home-accuracy">—</div>
+      <div class="stat-lbl">Accuracy</div>
+    </div>
+  </div>
+
+  <div class="streak-banner" id="streak-banner">
+    <div class="streak-fire">🔥</div>
+    <div class="streak-info">
+      <div class="streak-num" id="streak-num-big">0 Day Streak</div>
+      <div class="streak-text">Keep it going — practice daily!</div>
+    </div>
+    <button class="streak-cta" onclick="setPage('practice')">Practice</button>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">Pattern Library</div>
+    <div class="section-badge" id="home-total-badge">20 Patterns</div>
+  </div>
+
+  <div class="categories-grid">
+    <div class="cat-card glass single" onclick="setPage('learn');setTab('single')">
+      <div class="cat-icon">🕯️</div>
+      <div class="cat-name">Single Candle</div>
+      <div class="cat-count">6 patterns</div>
+      <div class="cat-arrow">›</div>
+    </div>
+    <div class="cat-card glass double" onclick="setPage('learn');setTab('double')">
+      <div class="cat-icon">📊</div>
+      <div class="cat-name">Two Candle</div>
+      <div class="cat-count">6 patterns</div>
+      <div class="cat-arrow">›</div>
+    </div>
+    <div class="cat-card glass triple" onclick="setPage('learn');setTab('triple')">
+      <div class="cat-icon">📈</div>
+      <div class="cat-name">Three Candle</div>
+      <div class="cat-count">4 patterns</div>
+      <div class="cat-arrow">›</div>
+    </div>
+    <div class="cat-card glass continuation" onclick="setPage('learn');setTab('continuation')">
+      <div class="cat-icon">🔄</div>
+      <div class="cat-name">Continuation</div>
+      <div class="cat-count">4 patterns</div>
+      <div class="cat-arrow">›</div>
+    </div>
+  </div>
+
+  <div style="height:16px"></div>
+</div>
+
+<!-- ════════════════ LEARN PAGE ════════════════ -->
+<div id="page-learn" class="page">
+  <div class="learn-header">
+    <div class="learn-title">Pattern Library</div>
+    <div class="tab-bar" id="learn-tabs">
+      <button class="tab-btn active" data-tab="all" onclick="setTab('all')">All</button>
+      <button class="tab-btn" data-tab="single" onclick="setTab('single')">Single</button>
+      <button class="tab-btn" data-tab="double" onclick="setTab('double')">Two Candle</button>
+      <button class="tab-btn" data-tab="triple" onclick="setTab('triple')">Three Candle</button>
+      <button class="tab-btn" data-tab="continuation" onclick="setTab('continuation')">Continuation</button>
+    </div>
+  </div>
+  <div class="patterns-list" id="patterns-list"></div>
+</div>
+
+<!-- ════════════════ PRACTICE PAGE ════════════════ -->
+<div id="page-practice" class="page">
+  <div class="practice-header">
+    <div class="practice-title">Practice Mode</div>
+    <div class="practice-sub">Identify the candlestick pattern</div>
+  </div>
+  <div class="quiz-wrap">
+    <div class="quiz-score-bar">
+      <div class="score-item"><div class="score-num bull" id="q-correct">0</div><div class="score-lbl">Correct</div></div>
+      <div class="score-item"><div class="score-num bear" id="q-wrong">0</div><div class="score-lbl">Wrong</div></div>
+      <div class="score-item"><div class="score-num gold" id="q-streak">0</div><div class="score-lbl">Streak 🔥</div></div>
+      <div class="score-item"><div class="score-num accent" id="q-accuracy">—</div><div class="score-lbl">Accuracy</div></div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-chart-area">
+        <canvas id="quiz-canvas" class="quiz-chart-canvas"></canvas>
+      </div>
+      <div class="quiz-card-footer">
+        <div class="quiz-prompt">What pattern is shown? <strong>👆 Identify it</strong></div>
+      </div>
+    </div>
+
+    <div class="options-grid" id="options-grid"></div>
+    <div class="quiz-reveal" id="quiz-reveal">
+      <div class="reveal-title" id="reveal-title"></div>
+      <div class="reveal-text" id="reveal-text"></div>
+    </div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next Pattern →</button>
+  </div>
+</div>
+
+<!-- ════════════════ PROGRESS PAGE ════════════════ -->
+<div id="page-progress" class="page">
+  <div class="progress-header">
+    <div class="progress-title">My Progress</div>
+    <div class="progress-sub">Track your learning journey</div>
+  </div>
+  <div class="progress-body">
+    <div class="big-stat-row">
+      <div class="big-stat">
+        <div class="big-stat-num gold" id="prog-streak">0</div>
+        <div class="big-stat-lbl">Day Streak 🔥</div>
+      </div>
+      <div class="big-stat">
+        <div class="big-stat-num bull" id="prog-learned">0/20</div>
+        <div class="big-stat-lbl">Patterns Learned</div>
+      </div>
+      <div class="big-stat">
+        <div class="big-stat-num accent" id="prog-total-q">0</div>
+        <div class="big-stat-lbl">Questions Done</div>
+      </div>
+      <div class="big-stat">
+        <div class="big-stat-num purple" id="prog-accuracy">—</div>
+        <div class="big-stat-lbl">Best Accuracy</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="progress-section-title">Category Progress</div>
+      <div class="progress-bar-row">
+        <div class="prog-item">
+          <div class="prog-item-head">
+            <span class="prog-item-name">Single Candle</span>
+            <span class="prog-item-pct" id="pct-single">0%</span>
+          </div>
+          <div class="prog-bar-bg"><div class="prog-bar-fill accent" id="bar-single" style="width:0%"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="prog-item-head">
+            <span class="prog-item-name">Two Candle</span>
+            <span class="prog-item-pct" id="pct-double">0%</span>
+          </div>
+          <div class="prog-bar-bg"><div class="prog-bar-fill bull" id="bar-double" style="width:0%"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="prog-item-head">
+            <span class="prog-item-name">Three Candle</span>
+            <span class="prog-item-pct" id="pct-triple">0%</span>
+          </div>
+          <div class="prog-bar-bg"><div class="prog-bar-fill gold" id="bar-triple" style="width:0%"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="prog-item-head">
+            <span class="prog-item-name">Continuation</span>
+            <span class="prog-item-pct" id="pct-continuation">0%</span>
+          </div>
+          <div class="prog-bar-bg"><div class="prog-bar-fill purple" id="bar-continuation" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accuracy-chart-wrap">
+      <div class="progress-section-title">Quiz Performance</div>
+      <div class="accuracy-ring-wrap">
+        <canvas id="acc-ring" width="110" height="110"></canvas>
+        <div class="accuracy-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--bull)"></div><span class="legend-label">Correct</span><span class="legend-val" id="leg-correct">0</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--bear)"></div><span class="legend-label">Wrong</span><span class="legend-val" id="leg-wrong">0</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div><span class="legend-label">Accuracy</span><span class="legend-val" id="leg-acc">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="reset-btn" onclick="resetProgress()">↺ Reset All Progress</button>
+  </div>
+</div>
+
+<!-- ════════════════ PATTERN DETAIL MODAL ════════════════ -->
+<div id="pattern-modal">
+  <div class="modal-header">
+    <div class="modal-back" onclick="closeModal()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="modal-title" id="modal-title">Pattern Name</div>
+    <div id="modal-badge"></div>
+  </div>
+  <div class="modal-body">
+    <div class="detail-chart-wrap">
+      <canvas class="detail-canvas" id="detail-canvas" height="180"></canvas>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-cell">
+        <div class="info-label">Signal</div>
+        <div class="info-value" id="modal-signal">—</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-label">Type</div>
+        <div class="info-value" id="modal-type">—</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-label">Reliability</div>
+        <div class="info-value" id="modal-reliability">—</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-label">Trend Context</div>
+        <div class="info-value" id="modal-context">—</div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">What It Means</div>
+      <div class="detail-text" id="modal-meaning"></div>
+    </div>
+
+    <div class="signal-box" id="modal-signal-box">
+      <div class="signal-icon" id="modal-signal-icon"></div>
+      <div class="signal-content">
+        <div class="signal-title" id="modal-signal-title"></div>
+        <div class="signal-text" id="modal-signal-text"></div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Key Characteristics</div>
+      <div class="detail-text" id="modal-characteristics"></div>
+    </div>
+
+    <div>
+      <div class="detail-section-title" style="padding: 0 0 10px">Simulation Chart</div>
+      <div class="sim-chart-wrap">
+        <div class="sim-chart-label">
+          <span>CONTEXT CHART</span><span id="sim-price">—</span>
+        </div>
+        <canvas id="sim-canvas" height="160" style="display:block;width:100%"></canvas>
+      </div>
+    </div>
+
+    <button class="mark-learned-btn" id="mark-learned-btn" onclick="toggleLearned()">✓ Mark as Learned</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- ════════════════ BOTTOM NAV ════════════════ -->
+<nav id="bottom-nav">
+  <button class="nav-btn active" data-page="home" onclick="setPage('home')">
+    <div class="nav-dot"></div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    <span>Home</span>
+  </button>
+  <button class="nav-btn" data-page="learn" onclick="setPage('learn')">
+    <div class="nav-dot"></div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+    </svg>
+    <span>Learn</span>
+  </button>
+  <button class="nav-btn" data-page="practice" onclick="setPage('practice')">
+    <div class="nav-dot"></div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="5 3 19 12 5 21 5 3"/>
+    </svg>
+    <span>Practice</span>
+  </button>
+  <button class="nav-btn" data-page="progress" onclick="setPage('progress')">
+    <div class="nav-dot"></div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+    <span>Progress</span>
+  </button>
+</nav>
+
+</div><!-- #app -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// PATTERN DATA
+// ═══════════════════════════════════════════════════════
+
+const PATTERNS = [
+  // ── SINGLE CANDLE ──
+  {
+    id:'doji', name:'Doji', category:'single',
+    signal:'neutral', type:'Reversal',
+    reliability:'Medium', context:'Any trend',
+    desc:'Open and close prices are nearly equal, forming a cross shape.',
+    meaning:'The Doji signals market indecision. Neither bulls nor bears gained control. The longer the wicks, the more significant the battle between buyers and sellers.',
+    signalIcon:'⚖️',
+    signalTitle:'Indecision Signal',
+    signalText:'After a strong trend, a Doji warns that momentum is fading. Watch for the next candle to confirm direction — breakout or breakdown.',
+    characteristics:'• Open ≈ Close (tiny or no body)\n• Upper and lower wicks present\n• More powerful after extended trend\n• Comes in subtypes: Long-Legged, Gravestone, Dragonfly',
+    drawFn: drawDoji,
+    simFn: simDoji
+  },
+  {
+    id:'hammer', name:'Hammer', category:'single',
+    signal:'bull', type:'Reversal',
+    reliability:'High', context:'Downtrend',
+    desc:'Small body at top, long lower wick — buyers rejected lower prices.',
+    meaning:'The Hammer appears after a downtrend. The long lower wick shows that sellers pushed price down aggressively, but buyers stepped in and drove it back up near the open. This rejection of lower prices is a strong bullish signal.',
+    signalIcon:'🔨',
+    signalTitle:'Bullish Reversal Signal',
+    signalText:'After a downtrend, the Hammer suggests buyers are absorbing selling pressure. Confirm with the next candle closing higher. A green hammer is stronger than a red one.',
+    characteristics:'• Small body at the top\n• Lower wick 2–3× body length\n• Little or no upper wick\n• Appears at the bottom of downtrends\n• Body color is secondary',
+    drawFn: drawHammer,
+    simFn: simHammer
+  },
+  {
+    id:'inverted-hammer', name:'Inverted Hammer', category:'single',
+    signal:'bull', type:'Reversal',
+    reliability:'Medium', context:'Downtrend',
+    desc:'Small body at bottom, long upper wick — buyers tried to push higher.',
+    meaning:'Similar to the Hammer but inverted. Buyers pushed prices up significantly during the session, but sellers pushed it back down. Despite the red close, the fact that buyers showed up this aggressively is a bullish sign.',
+    signalIcon:'🔼',
+    signalTitle:'Bullish Reversal Signal',
+    signalText:'The Inverted Hammer needs confirmation. Wait for the next candle to gap up or close higher. Volume is important — high volume increases reliability.',
+    characteristics:'• Small body at the bottom\n• Upper wick 2–3× body length\n• Little or no lower wick\n• Appears at bottoms after downtrend\n• Requires next-candle confirmation',
+    drawFn: drawInvertedHammer,
+    simFn: simInvertedHammer
+  },
+  {
+    id:'shooting-star', name:'Shooting Star', category:'single',
+    signal:'bear', type:'Reversal',
+    reliability:'High', context:'Uptrend',
+    desc:'Small body at bottom, long upper wick — sellers rejected higher prices.',
+    meaning:'The Shooting Star appears after an uptrend. Buyers pushed price up sharply during the session, but sellers overwhelmed them and pushed it back near the open. This rejection of higher prices signals bearish reversal.',
+    signalIcon:'💫',
+    signalTitle:'Bearish Reversal Signal',
+    signalText:'A Shooting Star at the top of an uptrend is a strong warning sign. The long upper wick shows supply is heavy at higher prices. Confirm with a bearish candle following it.',
+    characteristics:'• Small body at the bottom\n• Upper wick 2× or more body\n• Little or no lower wick\n• Appears at the top of uptrends\n• Red body is more bearish than green',
+    drawFn: drawShootingStar,
+    simFn: simShootingStar
+  },
+  {
+    id:'spinning-top', name:'Spinning Top', category:'single',
+    signal:'neutral', type:'Indecision',
+    reliability:'Low-Medium', context:'Any trend',
+    desc:'Small body with roughly equal upper and lower wicks — balanced forces.',
+    meaning:'The Spinning Top shows balance between buyers and sellers. Neither side gained a decisive advantage. In isolation it means little, but within a trend it signals weakening momentum and possible reversal.',
+    signalIcon:'🌀',
+    signalTitle:'Indecision / Trend Weakness',
+    signalText:'In an uptrend, Spinning Tops suggest buyer exhaustion. In a downtrend, they suggest seller fatigue. Watch subsequent candles for direction confirmation.',
+    characteristics:'• Small real body (any color)\n• Upper and lower wicks roughly equal\n• Wicks longer than the body\n• Neutral signal in isolation\n• Context determines significance',
+    drawFn: drawSpinningTop,
+    simFn: simSpinningTop
+  },
+  {
+    id:'marubozu', name:'Marubozu', category:'single',
+    signal:'both', type:'Continuation',
+    reliability:'High', context:'Any trend',
+    desc:'Full body candle with no wicks — absolute dominance by one side.',
+    meaning:'The Marubozu is the most decisive single candle. No wicks means the session opened at the extreme and closed at the other extreme. Bullish Marubozu: complete buyer control. Bearish Marubozu: complete seller control.',
+    signalIcon:'💪',
+    signalTitle:'Strong Momentum Signal',
+    signalText:'A Bullish Marubozu signals strong buying. A Bearish Marubozu signals strong selling. Both suggest momentum continuation but can also mark exhaustion at extremes.',
+    characteristics:'• No upper or lower wick (or very small)\n• Full-length body\n• Open = Low (Bull) or Open = High (Bear)\n• Close = High (Bull) or Close = Low (Bear)\n• Very high conviction signal',
+    drawFn: drawMarubozu,
+    simFn: simMarubozu
+  },
+  // ── DOUBLE CANDLE ──
+  {
+    id:'bullish-engulfing', name:'Bullish Engulfing', category:'double',
+    signal:'bull', type:'Reversal',
+    reliability:'High', context:'Downtrend',
+    desc:'Large green candle completely engulfs the previous red candle.',
+    meaning:'After a bearish candle, a much larger bullish candle opens lower and closes above the prior candle\'s open. Buyers overwhelmingly took control, indicating a strong shift in sentiment from bearish to bullish.',
+    signalIcon:'🟢',
+    signalTitle:'Bullish Reversal Signal',
+    signalText:'One of the most reliable two-candle patterns. The bigger the second candle relative to the first, the stronger the signal. Look for this after a sustained downtrend for maximum impact.',
+    characteristics:'• First candle: bearish (red/black)\n• Second candle: bullish, opens below prior close\n• Second body fully engulfs first body\n• Volume should be higher on second day\n• More reliable after long downtrends',
+    drawFn: drawBullishEngulfing,
+    simFn: simBullishEngulfing
+  },
+  {
+    id:'bearish-engulfing', name:'Bearish Engulfing', category:'double',
+    signal:'bear', type:'Reversal',
+    reliability:'High', context:'Uptrend',
+    desc:'Large red candle completely engulfs the previous green candle.',
+    meaning:'After a bullish candle, a much larger bearish candle opens higher and closes below the prior candle\'s open. Sellers overwhelmed buyers completely, signaling a major sentiment shift from bullish to bearish.',
+    signalIcon:'🔴',
+    signalTitle:'Bearish Reversal Signal',
+    signalText:'A powerful top reversal signal. The larger the engulfing candle, the more bearish the implications. Often triggers stop-losses and cascades into extended selling.',
+    characteristics:'• First candle: bullish (green/white)\n• Second candle: bearish, opens above prior close\n• Second body fully engulfs first body\n• Higher volume on second day confirms\n• More impactful after extended uptrends',
+    drawFn: drawBearishEngulfing,
+    simFn: simBearishEngulfing
+  },
+  {
+    id:'piercing-line', name:'Piercing Line', category:'double',
+    signal:'bull', type:'Reversal',
+    reliability:'Medium-High', context:'Downtrend',
+    desc:'Green candle closes above the midpoint of the prior red candle.',
+    meaning:'The first candle is bearish. The second opens below the prior low but closes above the midpoint of the first candle. Buyers stepped in strongly at lower prices, absorbing seller pressure and pushing more than halfway back up.',
+    signalIcon:'⬆️',
+    signalTitle:'Bullish Reversal Signal',
+    signalText:'The Piercing Line is bullish but slightly weaker than Engulfing because it doesn\'t fully cover the first candle. The deeper the penetration above 50%, the stronger the signal.',
+    characteristics:'• First candle: bearish with medium-large body\n• Second candle: opens below prior low (gap)\n• Second candle closes above first\'s midpoint\n• But does NOT close above first\'s open\n• Requires downtrend context',
+    drawFn: drawPiercingLine,
+    simFn: simPiercingLine
+  },
+  {
+    id:'dark-cloud-cover', name:'Dark Cloud Cover', category:'double',
+    signal:'bear', type:'Reversal',
+    reliability:'Medium-High', context:'Uptrend',
+    desc:'Red candle closes below the midpoint of the prior green candle.',
+    meaning:'The opposite of the Piercing Line. After a bullish candle, the second candle opens above the prior high but then closes below the first candle\'s midpoint. Sellers took control after an initial gap-up, a strong bearish warning.',
+    signalIcon:'☁️',
+    signalTitle:'Bearish Reversal Signal',
+    signalText:'After an uptrend, Dark Cloud Cover warns that the rally is exhausting. The deeper into the first candle the second one closes, the more bearish. Confirm with the next session.',
+    characteristics:'• First candle: bullish with medium-large body\n• Second candle: gaps up above prior high\n• Second candle closes below first\'s midpoint\n• Does NOT close below first\'s open\n• Requires uptrend context',
+    drawFn: drawDarkCloudCover,
+    simFn: simDarkCloudCover
+  },
+  {
+    id:'tweezer-top', name:'Tweezer Top', category:'double',
+    signal:'bear', type:'Reversal',
+    reliability:'Medium', context:'Uptrend',
+    desc:'Two candles with matching highs — resistance holding firm.',
+    meaning:'Two consecutive candles with identical or near-identical highs. The market tried twice to push higher but was rejected at the same level both times. This double rejection suggests strong resistance and potential reversal.',
+    signalIcon:'🔝',
+    signalTitle:'Bearish Reversal Signal',
+    signalText:'Tweezer Tops show strong supply at a specific price level. The first candle is bullish, the second fails at the same high. Combined with other bearish signals, it\'s highly reliable.',
+    characteristics:'• Two candles with matching highs\n• First candle typically bullish\n• Second candle typically bearish\n• Highs match exactly or nearly\n• Indicates firm overhead resistance',
+    drawFn: drawTweezerTop,
+    simFn: simTweezerTop
+  },
+  {
+    id:'tweezer-bottom', name:'Tweezer Bottom', category:'double',
+    signal:'bull', type:'Reversal',
+    reliability:'Medium', context:'Downtrend',
+    desc:'Two candles with matching lows — support holding firm.',
+    meaning:'Two consecutive candles with identical or near-identical lows. The market tested the same low level twice but couldn\'t break lower, indicating strong support. Buyers defended the level both times.',
+    signalIcon:'🔻',
+    signalTitle:'Bullish Reversal Signal',
+    signalText:'Tweezer Bottoms show strong demand at a specific price. After two failed attempts to break lower, buying pressure takes over. Look for increased volume on the second candle.',
+    characteristics:'• Two candles with matching lows\n• First candle typically bearish\n• Second candle typically bullish\n• Lows match exactly or nearly\n• Indicates strong support level',
+    drawFn: drawTweezerBottom,
+    simFn: simTweezerBottom
+  },
+  // ── THREE CANDLE ──
+  {
+    id:'morning-star', name:'Morning Star', category:'triple',
+    signal:'bull', type:'Reversal',
+    reliability:'Very High', context:'Downtrend',
+    desc:'Three-candle reversal: big bear, small indecision, big bull.',
+    meaning:'A three-day pattern. Day 1: large bearish candle continuing the downtrend. Day 2: small body (gap down) showing indecision. Day 3: large bullish candle closing well into Day 1\'s body. A classic and highly reliable bottom reversal.',
+    signalIcon:'🌅',
+    signalTitle:'Strong Bullish Reversal',
+    signalText:'The Morning Star is one of the most powerful reversal patterns. The middle star is the pivot — the moment uncertainty peaks. The third candle\'s size confirms bulls have taken command.',
+    characteristics:'• Day 1: Large bearish candle\n• Day 2: Small body (doji or spinning top), often gaps down\n• Day 3: Large bullish, closes into Day 1 body (>50%)\n• Gaps between candles strengthen signal\n• Volume: highest on Day 1 and Day 3',
+    drawFn: drawMorningStar,
+    simFn: simMorningStar
+  },
+  {
+    id:'evening-star', name:'Evening Star', category:'triple',
+    signal:'bear', type:'Reversal',
+    reliability:'Very High', context:'Uptrend',
+    desc:'Three-candle reversal: big bull, small indecision, big bear.',
+    meaning:'The bearish mirror of the Morning Star. Day 1: strong bullish candle. Day 2: small body/doji (gap up) representing indecision at the top. Day 3: large bearish candle closing well into Day 1\'s body. A classic top reversal.',
+    signalIcon:'🌆',
+    signalTitle:'Strong Bearish Reversal',
+    signalText:'The Evening Star signals the end of an uptrend. The star in the middle marks peak optimism before sellers flood in. Often precedes significant downturns. Wait for Day 3 confirmation.',
+    characteristics:'• Day 1: Large bullish candle\n• Day 2: Small body (doji/spinning top), often gaps up\n• Day 3: Large bearish, closes into Day 1 body (>50%)\n• Gaps increase significance\n• Higher volume on Day 3 confirms',
+    drawFn: drawEveningStar,
+    simFn: simEveningStar
+  },
+  {
+    id:'three-white-soldiers', name:'Three White Soldiers', category:'triple',
+    signal:'bull', type:'Reversal/Continuation',
+    reliability:'High', context:'Downtrend/Consolidation',
+    desc:'Three consecutive strong green candles with higher closes.',
+    meaning:'Three large bullish candles, each opening within the prior body and closing near its high. Represents a sustained, powerful shift from bearish to bullish sentiment. Shows strong buying conviction over three sessions.',
+    signalIcon:'🪖',
+    signalTitle:'Strong Bullish Signal',
+    signalText:'Three White Soldiers after a downtrend is very bullish. However, after an uptrend it can signal exhaustion. Each candle should have a substantial body with small wicks — wicks reduce reliability.',
+    characteristics:'• Three consecutive bullish candles\n• Each opens within prior body\n• Each closes near its high\n• Each close is higher than previous\n• Small or no upper wicks (ideal)',
+    drawFn: drawThreeWhiteSoldiers,
+    simFn: simThreeWhiteSoldiers
+  },
+  {
+    id:'three-black-crows', name:'Three Black Crows', category:'triple',
+    signal:'bear', type:'Reversal/Continuation',
+    reliability:'High', context:'Uptrend/Consolidation',
+    desc:'Three consecutive strong red candles with lower closes.',
+    meaning:'The bearish counterpart to Three White Soldiers. Three large bearish candles, each opening within the prior body and closing near its low. Sustained selling pressure dominates over three sessions.',
+    signalIcon:'🐦‍⬛',
+    signalTitle:'Strong Bearish Signal',
+    signalText:'Three Black Crows after a rally is a serious warning. It shows sellers are in firm control. If it appears after an extended uptrend at a resistance level, the reversal can be significant.',
+    characteristics:'• Three consecutive bearish candles\n• Each opens within prior body\n• Each closes near its low\n• Each close is lower than previous\n• Small or no lower wicks (ideal)',
+    drawFn: drawThreeBlackCrows,
+    simFn: simThreeBlackCrows
+  },
+  // ── CONTINUATION ──
+  {
+    id:'rising-three', name:'Rising Three Methods', category:'continuation',
+    signal:'bull', type:'Continuation',
+    reliability:'High', context:'Uptrend',
+    desc:'Bullish pause pattern: large green, three small reds, large green.',
+    meaning:'A bullish continuation pattern. Day 1: large bullish candle. Days 2-4: three small bearish candles contained within Day 1\'s range (the pullback). Day 5: large bullish candle closing above Day 1\'s high. The bulls took a breath and then resumed.',
+    signalIcon:'📈',
+    signalTitle:'Bullish Continuation Signal',
+    signalText:'The Rising Three Methods confirms the uptrend is intact. The small red candles are a healthy pause, not a reversal. When the final bullish candle breaks out, it signals the trend continues strongly.',
+    characteristics:'• Day 1: Large bullish candle\n• Days 2-4: 2-4 small bearish candles (stay within Day 1 range)\n• Final day: Large bullish closes above Day 1 high\n• Overall trend must be up\n• Usually 5 candles total',
+    drawFn: drawRisingThree,
+    simFn: simRisingThree
+  },
+  {
+    id:'falling-three', name:'Falling Three Methods', category:'continuation',
+    signal:'bear', type:'Continuation',
+    reliability:'High', context:'Downtrend',
+    desc:'Bearish pause pattern: large red, three small greens, large red.',
+    meaning:'The bearish counterpart to Rising Three Methods. Day 1: large bearish candle. Days 2-4: three small bullish candles within Day 1\'s range (a minor bounce). Day 5: large bearish candle closing below Day 1\'s low. Bears resume control.',
+    signalIcon:'📉',
+    signalTitle:'Bearish Continuation Signal',
+    signalText:'The Falling Three Methods shows that despite a temporary bounce, bears remain in control. The final breakdown candle confirms the downtrend will continue. High volume on Day 5 validates the pattern.',
+    characteristics:'• Day 1: Large bearish candle\n• Days 2-4: 2-4 small bullish candles (within Day 1 range)\n• Final day: Large bearish closes below Day 1 low\n• Overall trend must be down\n• Usually 5 candles total',
+    drawFn: drawFallingThree,
+    simFn: simFallingThree
+  }
+];
+
+// ═══════════════════════════════════════════════════════
+// STATE & STORAGE
+// ═══════════════════════════════════════════════════════
+
+let state = {
+  learned: [],
+  streak: 0,
+  lastDate: null,
+  quizCorrect: 0,
+  quizWrong: 0,
+  quizStreak: 0,
+  bestAccuracy: 0,
+  totalQuestions: 0
+};
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('candleiq_state');
+    if (s) state = {...state, ...JSON.parse(s)};
+  } catch(e){}
+}
+
+function saveState() {
+  try { localStorage.setItem('candleiq_state', JSON.stringify(state)); } catch(e){}
+}
+
+function resetProgress() {
+  if (!confirm('Reset all progress? This cannot be undone.')) return;
+  state = { learned:[], streak:0, lastDate:null, quizCorrect:0, quizWrong:0, quizStreak:0, bestAccuracy:0, totalQuestions:0 };
+  saveState();
+  updateAllUI();
+  alert('Progress reset!');
+}
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+
+function setPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === name);
+  });
+  if (name === 'progress') { setTimeout(updateProgressPage, 50); }
+  if (name === 'practice') { setTimeout(initQuiz, 50); }
+  if (name === 'home') updateHomeStats();
+}
+
+function setTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  renderPatterns(tab);
+}
+
+// ═══════════════════════════════════════════════════════
+// CANDLE DRAWING UTILITIES
+// ═══════════════════════════════════════════════════════
+
+const BULL_COLOR = '#00d97e';
+const BEAR_COLOR = '#ff4757';
+const BULL_DIM = 'rgba(0,217,126,0.3)';
+const BEAR_DIM = 'rgba(255,71,87,0.3)';
+
+function drawCandle(ctx, x, centerY, bodyH, bodyY_offset, wickTop, wickBot, isBull, w=12) {
+  const color = isBull ? BULL_COLOR : BEAR_COLOR;
+  // Wick
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x + w/2, centerY - wickTop);
+  ctx.lineTo(x + w/2, centerY - wickTop + wickTop + wickBot + bodyH);
+  ctx.stroke();
+  // Body
+  ctx.fillStyle = color;
+  const by = centerY - wickTop + wickTop;
+  ctx.fillRect(x, centerY - wickTop + wickTop + (isBull? 0 : 0) + bodyY_offset, w, bodyH);
+}
+
+function setupCanvas(canvas, h) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth || canvas.parentElement?.offsetWidth || 320;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return {ctx, w, h: h};
+}
+
+// Grid background for charts
+function drawGrid(ctx, w, h) {
+  ctx.fillStyle = '#111820';
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(31,45,61,0.6)';
+  ctx.lineWidth = 0.5;
+  for (let i=0; i<5; i++) {
+    const y = (h/5)*i;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+  for (let i=0; i<8; i++) {
+    const x = (w/8)*i;
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+  }
+}
+
+function drawSimpleCandle(ctx, x, openY, closeY, highY, lowY, isBull, bw=14) {
+  const color = isBull ? BULL_COLOR : BEAR_COLOR;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  // Wick
+  const centerX = x + bw/2;
+  ctx.beginPath();
+  ctx.moveTo(centerX, highY);
+  ctx.lineTo(centerX, lowY);
+  ctx.stroke();
+  // Body
+  ctx.fillStyle = color;
+  const bodyTop = Math.min(openY, closeY);
+  const bodyH = Math.max(Math.abs(closeY - openY), 2);
+  ctx.fillRect(x, bodyTop, bw, bodyH);
+}
+
+// ═══════════════════════════════════════════════════════
+// PATTERN THUMBNAIL DRAW FUNCTIONS
+// ═══════════════════════════════════════════════════════
+
+function drawDoji(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas, 64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const cx=w/2, cy=h/2;
+  ctx.strokeStyle='#3d8eff'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(cx,8); ctx.lineTo(cx,h-8); ctx.stroke();
+  ctx.fillStyle='#3d8eff'; ctx.fillRect(cx-8,cy-1,16,3);
+}
+function drawHammer(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const cx=w/2, bw=14, bh=14;
+  ctx.strokeStyle=BULL_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(cx,h-8); ctx.lineTo(cx,22); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(cx-bw/2,8,bw,bh);
+  ctx.strokeStyle=BULL_COLOR; ctx.beginPath(); ctx.moveTo(cx,8); ctx.lineTo(cx,5); ctx.stroke();
+}
+function drawInvertedHammer(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const cx=w/2, bw=14, bh=14;
+  ctx.strokeStyle=BULL_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(cx,8); ctx.lineTo(cx,h-22); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(cx-bw/2,h-22,bw,bh);
+  ctx.strokeStyle=BULL_COLOR; ctx.beginPath(); ctx.moveTo(cx,h-8); ctx.lineTo(cx,h-5); ctx.stroke();
+}
+function drawShootingStar(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const cx=w/2, bw=14, bh=14;
+  ctx.strokeStyle=BEAR_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(cx,8); ctx.lineTo(cx,h-22); ctx.stroke();
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(cx-bw/2,h-22,bw,bh);
+  ctx.strokeStyle=BEAR_COLOR; ctx.beginPath(); ctx.moveTo(cx,h-8); ctx.lineTo(cx,h-5); ctx.stroke();
+}
+function drawSpinningTop(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const cx=w/2, bw=14, bh=12;
+  ctx.strokeStyle='#8a9bb0'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(cx,8); ctx.lineTo(cx,h-8); ctx.stroke();
+  ctx.fillStyle='#8a9bb0'; ctx.fillRect(cx-bw/2,(h-bh)/2,bw,bh);
+}
+function drawMarubozu(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const cx=w/2, bw=14;
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(cx-bw/2,8,bw,h-16);
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(cx+4,8,bw,h-16);
+}
+function drawBullishEngulfing(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle=BEAR_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(w/2-10+6,14); ctx.lineTo(w/2-10+6,50); ctx.stroke();
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(w/2-16,20,12,24);
+  ctx.strokeStyle=BULL_COLOR;
+  ctx.beginPath(); ctx.moveTo(w/2+8+6,10); ctx.lineTo(w/2+8+6,54); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(w/2+2,14,14,36);
+}
+function drawBearishEngulfing(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle=BULL_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(w/2-10+6,18); ctx.lineTo(w/2-10+6,50); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(w/2-16,22,12,22);
+  ctx.strokeStyle=BEAR_COLOR;
+  ctx.beginPath(); ctx.moveTo(w/2+8+6,10); ctx.lineTo(w/2+8+6,54); ctx.stroke();
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(w/2+2,14,14,36);
+}
+function drawPiercingLine(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle=BEAR_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(w/2-10+6,12); ctx.lineTo(w/2-10+6,52); ctx.stroke();
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(w/2-16,16,12,32);
+  ctx.strokeStyle=BULL_COLOR;
+  ctx.beginPath(); ctx.moveTo(w/2+8+6,28); ctx.lineTo(w/2+8+6,56); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(w/2+2,30,14,24);
+}
+function drawDarkCloudCover(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle=BULL_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(w/2-10+6,12); ctx.lineTo(w/2-10+6,52); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(w/2-16,16,12,32);
+  ctx.strokeStyle=BEAR_COLOR;
+  ctx.beginPath(); ctx.moveTo(w/2+8+6,8); ctx.lineTo(w/2+8+6,50); ctx.stroke();
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(w/2+2,10,14,26);
+}
+function drawTweezerTop(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle=BULL_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(w/2-9+5,10); ctx.lineTo(w/2-9+5,50); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(w/2-15,26,10,20);
+  ctx.strokeStyle=BEAR_COLOR;
+  ctx.beginPath(); ctx.moveTo(w/2+5+5,10); ctx.lineTo(w/2+5+5,50); ctx.stroke();
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(w/2+3,18,10,28);
+  ctx.strokeStyle='rgba(255,209,102,0.6)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,10); ctx.lineTo(w,10); ctx.stroke();
+}
+function drawTweezerBottom(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle=BEAR_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(w/2-9+5,14); ctx.lineTo(w/2-9+5,54); ctx.stroke();
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(w/2-15,14,10,26);
+  ctx.strokeStyle=BULL_COLOR;
+  ctx.beginPath(); ctx.moveTo(w/2+5+5,14); ctx.lineTo(w/2+5+5,54); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(w/2+3,18,10,22);
+  ctx.strokeStyle='rgba(0,217,126,0.5)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,54); ctx.lineTo(w,54); ctx.stroke();
+}
+function drawMorningStar(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const s=w/3;
+  ctx.strokeStyle=BEAR_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(s*.5,10); ctx.lineTo(s*.5,52); ctx.stroke();
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(s*.5-7,14,14,28);
+  ctx.fillStyle='#8a9bb0'; ctx.fillRect(s*1.5-5,36,10,8);
+  ctx.strokeStyle='#8a9bb0'; ctx.beginPath(); ctx.moveTo(s*1.5,34); ctx.lineTo(s*1.5,46); ctx.stroke();
+  ctx.strokeStyle=BULL_COLOR;
+  ctx.beginPath(); ctx.moveTo(s*2.5,12); ctx.lineTo(s*2.5,50); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(s*2.5-7,16,14,28);
+}
+function drawEveningStar(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const s=w/3;
+  ctx.strokeStyle=BULL_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(s*.5,12); ctx.lineTo(s*.5,54); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(s*.5-7,16,14,28);
+  ctx.fillStyle='#8a9bb0'; ctx.fillRect(s*1.5-5,18,10,8);
+  ctx.strokeStyle='#8a9bb0'; ctx.beginPath(); ctx.moveTo(s*1.5,14); ctx.lineTo(s*1.5,28); ctx.stroke();
+  ctx.strokeStyle=BEAR_COLOR;
+  ctx.beginPath(); ctx.moveTo(s*2.5,14); ctx.lineTo(s*2.5,54); ctx.stroke();
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(s*2.5-7,18,14,28);
+}
+function drawThreeWhiteSoldiers(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const s=w/3;
+  [[s*.5,22,48],[s*1.5,16,44],[s*2.5,10,40]].forEach(([cx,top,bot])=>{
+    ctx.strokeStyle=BULL_COLOR; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(cx,top-4); ctx.lineTo(cx,bot+4); ctx.stroke();
+    ctx.fillStyle=BULL_COLOR; ctx.fillRect(cx-7,top,14,bot-top);
+  });
+}
+function drawThreeBlackCrows(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const s=w/3;
+  [[s*.5,14,38],[s*1.5,22,46],[s*2.5,28,54]].forEach(([cx,top,bot])=>{
+    ctx.strokeStyle=BEAR_COLOR; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(cx,top-4); ctx.lineTo(cx,bot+4); ctx.stroke();
+    ctx.fillStyle=BEAR_COLOR; ctx.fillRect(cx-7,top,14,bot-top);
+  });
+}
+function drawRisingThree(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const cols=w/5;
+  ctx.strokeStyle=BULL_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(cols*.5,8); ctx.lineTo(cols*.5,56); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(cols*.5-7,12,14,36);
+  [cols*1.5,cols*2.5,cols*3.5].forEach((cx,i)=>{
+    const t=28+i*4, b=42+i*4;
+    ctx.strokeStyle=BEAR_DIM; ctx.beginPath(); ctx.moveTo(cx,t-3); ctx.lineTo(cx,b+3); ctx.stroke();
+    ctx.fillStyle=BEAR_DIM; ctx.fillRect(cx-5,t,10,b-t);
+  });
+  ctx.strokeStyle=BULL_COLOR;
+  ctx.beginPath(); ctx.moveTo(cols*4.5,4); ctx.lineTo(cols*4.5,52); ctx.stroke();
+  ctx.fillStyle=BULL_COLOR; ctx.fillRect(cols*4.5-7,8,14,36);
+}
+function drawFallingThree(canvas) {
+  const {ctx,w,h} = setupCanvas(canvas,64);
+  ctx.fillStyle='#111820'; ctx.fillRect(0,0,w,h);
+  const cols=w/5;
+  ctx.strokeStyle=BEAR_COLOR; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(cols*.5,8); ctx.lineTo(cols*.5,56); ctx.stroke();
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(cols*.5-7,12,14,36);
+  [cols*1.5,cols*2.5,cols*3.5].forEach((cx,i)=>{
+    const t=20-i*4, b=34-i*4;
+    ctx.strokeStyle=BULL_DIM; ctx.beginPath(); ctx.moveTo(cx,t-3); ctx.lineTo(cx,b+3); ctx.stroke();
+    ctx.fillStyle=BULL_DIM; ctx.fillRect(cx-5,t,10,b-t);
+  });
+  ctx.strokeStyle=BEAR_COLOR;
+  ctx.beginPath(); ctx.moveTo(cols*4.5,10); ctx.lineTo(cols*4.5,58); ctx.stroke();
+  ctx.fillStyle=BEAR_COLOR; ctx.fillRect(cols*4.5-7,14,14,38);
+}
+
+// ═══════════════════════════════════════════════════════
+// DETAIL CHART DRAW FUNCTIONS (180px height)
+// ═══════════════════════════════════════════════════════
+
+function drawDetailCandle(ctx, x, o, c, h, l, isBull, bw=20) {
+  const color = isBull ? BULL_COLOR : BEAR_COLOR;
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  const cx = x + bw/2;
+  ctx.beginPath(); ctx.moveTo(cx, h); ctx.lineTo(cx, l); ctx.stroke();
+  ctx.fillStyle = color;
+  const top = Math.min(o,c), bot = Math.max(o,c);
+  ctx.fillRect(x, top, bw, Math.max(bot-top, 2));
+}
+
+function scaleY(price, minP, maxP, h, pad=20) {
+  return pad + (h-pad*2) * (1-(price-minP)/(maxP-minP));
+}
+
+function buildDetailDraw(ohlcArr) {
+  return function(canvas) {
+    const {ctx,w,h} = setupCanvas(canvas,180);
+    drawGrid(ctx,w,h);
+    const n = ohlcArr.length;
+    const all = ohlcArr.flatMap(c=>[c.h,c.l]);
+    const minP=Math.min(...all), maxP=Math.max(...all);
+    const bw = Math.floor(w/n*0.55);
+    const gap = w/n;
+    ohlcArr.forEach((c,i)=>{
+      const x = gap*i + (gap-bw)/2;
+      const o=scaleY(c.o,minP,maxP,h), cl=scaleY(c.c,minP,maxP,h);
+      const hi=scaleY(c.h,minP,maxP,h), lo=scaleY(c.l,minP,maxP,h);
+      drawDetailCandle(ctx,x,o,cl,hi,lo,c.c>=c.o,bw);
+    });
+  };
+}
+
+// Generate detailed candle data for each pattern
+function mkC(o,h,l,c){ return {o,h,l,c}; }
+
+const detailFns = {
+  'doji': buildDetailDraw([mkC(100,108,92,100.5),mkC(102,110,94,103),mkC(105,112,98,106),mkC(104,109,95,104.2),mkC(106,111,99,106.1)]),
+  'hammer': buildDetailDraw([mkC(110,112,106,108),mkC(108,110,104,106),mkC(106,108,88,105),mkC(100,102,84,99),mkC(95,97,72,94.5)]),
+  'inverted-hammer': buildDetailDraw([mkC(110,112,106,108),mkC(106,108,102,104),mkC(102,104,98,100),mkC(97,99,93,95),mkC(90,105,88,91)]),
+  'shooting-star': buildDetailDraw([mkC(90,92,88,92),mkC(94,96,92,95),mkC(96,98,94,97),mkC(98,100,96,99),mkC(100,115,98,101)]),
+  'spinning-top': buildDetailDraw([mkC(100,104,97,102),mkC(103,108,100,105),mkC(106,110,103,108),mkC(109,114,106,110.5),mkC(111,116,107,111.8)]),
+  'marubozu': buildDetailDraw([mkC(100,102,98,101),mkC(101,103,99,102),mkC(102,114,102,114),mkC(114,126,114,126),mkC(126,126,122,124)]),
+  'bullish-engulfing': buildDetailDraw([mkC(110,112,108,109),mkC(109,110,106,107),mkC(107,108,104,105),mkC(105,106,103,103.5),mkC(102,112,101,111)]),
+  'bearish-engulfing': buildDetailDraw([mkC(100,102,99,101),mkC(101,103,100,102),mkC(102,104,101,103),mkC(103,105,102,104),mkC(105,107,99,100)]),
+  'piercing-line': buildDetailDraw([mkC(110,112,108,109),mkC(109,110,106,107),mkC(105,106,102,103),mkC(103,104,99,100),mkC(97,107,96,106)]),
+  'dark-cloud-cover': buildDetailDraw([mkC(100,102,99,101),mkC(101,103,100,102),mkC(102,104,101,103),mkC(103,105,102,104.5),mkC(106,108,100,101)]),
+  'tweezer-top': buildDetailDraw([mkC(100,102,99,101),mkC(101,103,100,102),mkC(103,108,102,107),mkC(105,108,102,106),mkC(106,108,100,101)]),
+  'tweezer-bottom': buildDetailDraw([mkC(110,112,108,109),mkC(108,110,105,106),mkC(106,108,103,104),mkC(103,105,100,101),mkC(99,104,100,103)]),
+  'morning-star': buildDetailDraw([mkC(110,112,108,108.5),mkC(106,107,100,101),mkC(102,103,100,101),mkC(99,100,98,99),mkC(100,112,99,111)]),
+  'evening-star': buildDetailDraw([mkC(100,102,99,101),mkC(101,103,100,102),mkC(103,106,102,105.5),mkC(107,108,106,107),mkC(106,107,95,96)]),
+  'three-white-soldiers': buildDetailDraw([mkC(95,96,90,91),mkC(90,92,88,92),mkC(93,102,92,101),mkC(102,110,101,109),mkC(110,118,109,117)]),
+  'three-black-crows': buildDetailDraw([mkC(110,111,115,114),mkC(114,115,110,110.5),mkC(108,109,100,100.5),mkC(99,100,92,92.5),mkC(91,92,84,84.5)]),
+  'rising-three': buildDetailDraw([mkC(100,102,99,102),mkC(103,110,102,109),mkC(108,110,106,107),mkC(107,108,105,106),mkC(105,107,104,106),mkC(106,116,105,115)]),
+  'falling-three': buildDetailDraw([mkC(110,111,108,108),mkC(107,108,99,100),mkC(101,103,100,102),mkC(102,103,101,101.5),mkC(100,102,99,101),mkC(100,101,91,92)])
+};
+
+// Simulation chart (context around pattern) 
+function buildSimDraw(preCandles, patternCandles, postCandles) {
+  return function(canvas) {
+    const all = [...preCandles, ...patternCandles, ...postCandles];
+    const {ctx,w,h} = setupCanvas(canvas,160);
+    drawGrid(ctx,w,h);
+    const n = all.length;
+    const vals = all.flatMap(c=>[c.h,c.l]);
+    const minP=Math.min(...vals), maxP=Math.max(...vals);
+    const bw = Math.max(Math.floor(w/n*0.58), 6);
+    const gap = w/n;
+    all.forEach((c,i)=>{
+      const isPattern = i >= preCandles.length && i < preCandles.length + patternCandles.length;
+      const x = gap*i + (gap-bw)/2;
+      const o=scaleY(c.o,minP,maxP,h), cl=scaleY(c.c,minP,maxP,h);
+      const hi=scaleY(c.h,minP,maxP,h), lo=scaleY(c.l,minP,maxP,h);
+      const isBull = c.c >= c.o;
+      const color = isBull ? BULL_COLOR : BEAR_COLOR;
+      const dim = isBull ? BULL_DIM : BEAR_DIM;
+      ctx.strokeStyle = isPattern ? color : dim;
+      ctx.lineWidth = 1.5;
+      const cx = x + bw/2;
+      ctx.beginPath(); ctx.moveTo(cx,hi); ctx.lineTo(cx,lo); ctx.stroke();
+      ctx.fillStyle = isPattern ? color : dim;
+      const top=Math.min(o,cl), bot=Math.max(o,cl);
+      ctx.fillRect(x,top,bw,Math.max(bot-top,2));
+    });
+    // highlight box
+    const pi = preCandles.length;
+    const px = gap*pi + (gap-bw)/2 - 4;
+    const pe = gap*(pi+patternCandles.length-1) + (gap+bw)/2 + 4;
+    ctx.strokeStyle='rgba(255,209,102,0.4)';
+    ctx.lineWidth=1;
+    ctx.strokeRect(px, 4, pe-px, h-8);
+  };
+}
+
+function simDoji(c){return buildSimDraw(
+  [mkC(100,104,97,102),mkC(102,106,99,104),mkC(104,108,101,107),mkC(107,110,105,108),mkC(108,112,106,110)],
+  [mkC(110,115,106,110.3)],
+  [mkC(108,112,106,109),mkC(106,110,104,107)]
+)(c);}
+function simHammer(c){return buildSimDraw(
+  [mkC(115,117,113,114),mkC(113,115,110,111),mkC(111,112,107,108),mkC(108,109,104,105)],
+  [mkC(104,106,88,103.5)],
+  [mkC(106,110,104,109),mkC(110,115,108,114)]
+)(c);}
+function simInvertedHammer(c){return buildSimDraw(
+  [mkC(115,117,113,113.5),mkC(113,114,110,110.5),mkC(110,112,107,108),mkC(108,109,104,105)],
+  [mkC(103,116,101,104)],
+  [mkC(106,112,104,111),mkC(112,118,110,117)]
+)(c);}
+function simShootingStar(c){return buildSimDraw(
+  [mkC(95,97,93,96),mkC(97,100,95,99),mkC(99,103,97,102),mkC(102,106,100,105)],
+  [mkC(106,120,104,107)],
+  [mkC(104,106,100,101),mkC(100,103,96,97)]
+)(c);}
+function simSpinningTop(c){return buildSimDraw(
+  [mkC(100,104,98,103),mkC(103,107,101,106),mkC(106,110,104,109),mkC(109,113,107,112)],
+  [mkC(112,116,108,112.4)],
+  [mkC(110,114,108,111),mkC(108,112,106,109)]
+)(c);}
+function simMarubozu(c){return buildSimDraw(
+  [mkC(100,103,99,102),mkC(103,105,101,104),mkC(100,102,98,100)],
+  [mkC(100,114,100,114),mkC(114,128,114,128)],
+  [mkC(128,132,126,130),mkC(130,134,128,133)]
+)(c);}
+function simBullishEngulfing(c){return buildSimDraw(
+  [mkC(115,117,113,114),mkC(113,115,110,111),mkC(111,113,108,109),mkC(109,110,106,107)],
+  [mkC(106,108,104,105),mkC(103,115,102,114)],
+  [mkC(115,118,113,117),mkC(118,122,116,121)]
+)(c);}
+function simBearishEngulfing(c){return buildSimDraw(
+  [mkC(98,100,96,99),mkC(100,103,98,102),mkC(102,105,100,104),mkC(105,108,103,107)],
+  [mkC(107,109,105,108),mkC(110,112,100,101)],
+  [mkC(100,102,97,98),mkC(97,99,93,94)]
+)(c);}
+function simPiercingLine(c){return buildSimDraw(
+  [mkC(114,116,112,113),mkC(112,114,109,110),mkC(110,111,107,108),mkC(108,109,104,105)],
+  [mkC(104,106,101,102),mkC(99,110,98,109)],
+  [mkC(110,113,108,112),mkC(112,116,110,115)]
+)(c);}
+function simDarkCloudCover(c){return buildSimDraw(
+  [mkC(97,99,95,98),mkC(99,102,97,101),mkC(101,104,99,103),mkC(103,106,101,105)],
+  [mkC(105,108,103,107),mkC(109,111,100,101)],
+  [mkC(100,103,98,99),mkC(98,100,95,96)]
+)(c);}
+function simTweezerTop(c){return buildSimDraw(
+  [mkC(98,100,96,99),mkC(100,103,98,102),mkC(103,106,101,105),mkC(105,108,103,107)],
+  [mkC(107,110,105,109),mkC(108,110,103,104)],
+  [mkC(103,105,100,101),mkC(100,102,97,98)]
+)(c);}
+function simTweezerBottom(c){return buildSimDraw(
+  [mkC(114,116,112,113),mkC(112,114,110,111),mkC(110,112,107,108),mkC(107,109,105,106)],
+  [mkC(105,107,102,103),mkC(103,107,102,106)],
+  [mkC(107,110,105,109),mkC(110,114,108,113)]
+)(c);}
+function simMorningStar(c){return buildSimDraw(
+  [mkC(118,120,116,118),mkC(116,118,113,114),mkC(114,115,110,111)],
+  [mkC(110,112,108,109),mkC(107,109,106,107.5),mkC(108,118,107,117)],
+  [mkC(118,121,116,120),mkC(121,125,119,124)]
+)(c);}
+function simEveningStar(c){return buildSimDraw(
+  [mkC(97,99,95,98),mkC(99,102,97,101),mkC(101,105,99,104)],
+  [mkC(104,108,102,107),mkC(108,110,107,109),mkC(108,110,98,99)],
+  [mkC(98,100,95,96),mkC(95,97,92,93)]
+)(c);}
+function simThreeWhiteSoldiers(c){return buildSimDraw(
+  [mkC(95,97,90,91),mkC(91,93,88,89),mkC(89,91,86,87)],
+  [mkC(87,96,86,95),mkC(95,104,94,103),mkC(103,112,102,111)],
+  [mkC(112,115,110,114),mkC(114,118,112,117)]
+)(c);}
+function simThreeBlackCrows(c){return buildSimDraw(
+  [mkC(105,107,103,106),mkC(106,109,104,108),mkC(108,111,106,110)],
+  [mkC(109,111,101,102),mkC(101,103,93,94),mkC(93,95,85,86)],
+  [mkC(85,87,82,83),mkC(82,84,79,80)]
+)(c);}
+function simRisingThree(c){return buildSimDraw(
+  [mkC(100,102,99,101),mkC(101,104,100,103)],
+  [mkC(103,112,102,111),mkC(110,112,107,108),mkC(108,110,106,107),mkC(106,108,105,106),mkC(106,116,105,115)],
+  [mkC(116,120,114,119),mkC(119,124,117,123)]
+)(c);}
+function simFallingThree(c){return buildSimDraw(
+  [mkC(120,122,119,121),mkC(121,123,120,120.5)],
+  [mkC(119,121,110,111),mkC(112,114,111,113),mkC(113,115,112,113.5),mkC(113,115,112,114),mkC(113,114,104,105)],
+  [mkC(104,106,100,101),mkC(100,102,96,97)]
+)(c);}
+
+// Map sim functions
+const simFns = {
+  'doji':simDoji,'hammer':simHammer,'inverted-hammer':simInvertedHammer,
+  'shooting-star':simShootingStar,'spinning-top':simSpinningTop,'marubozu':simMarubozu,
+  'bullish-engulfing':simBullishEngulfing,'bearish-engulfing':simBearishEngulfing,
+  'piercing-line':simPiercingLine,'dark-cloud-cover':simDarkCloudCover,
+  'tweezer-top':simTweezerTop,'tweezer-bottom':simTweezerBottom,
+  'morning-star':simMorningStar,'evening-star':simEveningStar,
+  'three-white-soldiers':simThreeWhiteSoldiers,'three-black-crows':simThreeBlackCrows,
+  'rising-three':simRisingThree,'falling-three':simFallingThree
+};
+
+// ═══════════════════════════════════════════════════════
+// RENDER PATTERN LIST
+// ═══════════════════════════════════════════════════════
+
+function renderPatterns(tab='all') {
+  const list = document.getElementById('patterns-list');
+  const filtered = tab==='all' ? PATTERNS : PATTERNS.filter(p=>p.category===tab);
+  list.innerHTML = '';
+  filtered.forEach(p => {
+    const learned = state.learned.includes(p.id);
+    const div = document.createElement('div');
+    div.className = 'pattern-card glass' + (learned ? ' learned' : '');
+    div.innerHTML = `
+      <div class="pattern-thumb" id="thumb-${p.id}"></div>
+      <div class="pattern-info">
+        <div class="pattern-name">${p.name}</div>
+        <div class="pattern-desc">${p.desc}</div>
+        <div class="pattern-meta">
+          <span class="badge ${p.signal}">${p.signal==='both'?'Bull/Bear':p.signal.charAt(0).toUpperCase()+p.signal.slice(1)}</span>
+          <span class="badge neutral">${p.type}</span>
+        </div>
+      </div>
+      ${learned ? '<div class="learned-check">✓</div>' : ''}
+    `;
+    div.onclick = () => openModal(p.id);
+    list.appendChild(div);
+    // Draw thumbnail
+    const thumbDiv = document.getElementById('thumb-'+p.id);
+    const canvas = document.createElement('canvas');
+    canvas.style.width='64px'; canvas.style.height='64px';
+    thumbDiv.appendChild(canvas);
+    setTimeout(()=>{ p.drawFn(canvas); },10);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════
+
+let currentModalPattern = null;
+
+function openModal(id) {
+  const p = PATTERNS.find(x=>x.id===id);
+  if (!p) return;
+  currentModalPattern = p;
+
+  document.getElementById('modal-title').textContent = p.name;
+  
+  const badge = document.getElementById('modal-badge');
+  badge.innerHTML = `<span class="badge ${p.signal}">${p.signal==='both'?'Bull/Bear':p.signal.charAt(0).toUpperCase()+p.signal.slice(1)}</span>`;
+  
+  document.getElementById('modal-signal').textContent = p.signal==='bull'?'📈 Bullish':p.signal==='bear'?'📉 Bearish':'⚖️ Neutral / Both';
+  document.getElementById('modal-type').textContent = p.type;
+  document.getElementById('modal-reliability').textContent = p.reliability;
+  document.getElementById('modal-context').textContent = p.context;
+  document.getElementById('modal-meaning').textContent = p.meaning;
+  
+  const sb = document.getElementById('modal-signal-box');
+  sb.className = 'signal-box ' + (p.signal==='bull'?'bull':p.signal==='bear'?'bear':'neutral');
+  document.getElementById('modal-signal-icon').textContent = p.signalIcon;
+  document.getElementById('modal-signal-title').textContent = p.signalTitle;
+  document.getElementById('modal-signal-text').textContent = p.signalText;
+  document.getElementById('modal-characteristics').textContent = p.characteristics;
+
+  const learned = state.learned.includes(p.id);
+  const btn = document.getElementById('mark-learned-btn');
+  btn.textContent = learned ? '✓ Learned!' : '✓ Mark as Learned';
+  btn.className = 'mark-learned-btn' + (learned?' done':'');
+
+  const modal = document.getElementById('pattern-modal');
+  modal.classList.add('open');
+  modal.querySelector('.modal-body').scrollTop = 0;
+
+  // Draw charts
+  setTimeout(() => {
+    const dc = document.getElementById('detail-canvas');
+    dc.style.width = '100%';
+    const fn = detailFns[p.id];
+    if (fn) fn(dc);
+
+    const sc = document.getElementById('sim-canvas');
+    sc.style.width = '100%';
+    const sf = simFns[p.id];
+    if (sf) sf(sc);
+
+    const simPrice = 100 + Math.random()*50;
+    document.getElementById('sim-price').textContent = '$' + simPrice.toFixed(2);
+  }, 50);
+}
+
+function closeModal() {
+  document.getElementById('pattern-modal').classList.remove('open');
+  currentModalPattern = null;
+}
+
+function toggleLearned() {
+  if (!currentModalPattern) return;
+  const id = currentModalPattern.id;
+  const idx = state.learned.indexOf(id);
+  if (idx>=0) { state.learned.splice(idx,1); }
+  else { state.learned.push(id); }
+  saveState();
+  const learned = state.learned.includes(id);
+  const btn = document.getElementById('mark-learned-btn');
+  btn.textContent = learned ? '✓ Learned!' : '✓ Mark as Learned';
+  btn.className = 'mark-learned-btn' + (learned?' done':'');
+  btn.classList.add('pop');
+  setTimeout(()=>btn.classList.remove('pop'),300);
+  updateHomeStats();
+}
+
+// ═══════════════════════════════════════════════════════
+// QUIZ / PRACTICE
+// ═══════════════════════════════════════════════════════
+
+let currentQ = null;
+let quizAnswered = false;
+
+function getQuizOptions(correct) {
+  const others = PATTERNS.filter(p=>p.id!==correct.id);
+  const shuffled = others.sort(()=>Math.random()-0.5).slice(0,3);
+  const opts = [...shuffled, correct].sort(()=>Math.random()-0.5);
+  return opts;
+}
+
+function initQuiz() {
+  nextQuestion();
+}
+
+function nextQuestion() {
+  quizAnswered = false;
+  const p = PATTERNS[Math.floor(Math.random()*PATTERNS.length)];
+  currentQ = p;
+
+  // Draw quiz chart
+  const canvas = document.getElementById('quiz-canvas');
+  const wrap = canvas.parentElement;
+  canvas.style.width = wrap.offsetWidth + 'px';
+  canvas.style.height = '200px';
+  const fn = detailFns[p.id] || simFns[p.id];
+  if (fn) { setTimeout(()=>fn(canvas), 10); }
+
+  // Options
+  const opts = getQuizOptions(p);
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  opts.forEach(o => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.textContent = o.name;
+    btn.onclick = () => answerQuestion(o.id, btn);
+    grid.appendChild(btn);
+  });
+
+  // Hide reveal / next
+  const rev = document.getElementById('quiz-reveal');
+  rev.className = 'quiz-reveal';
+  document.getElementById('next-btn').className = 'next-btn';
+  
+  updateQuizScoreUI();
+}
+
+function answerQuestion(selectedId, btn) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  const correct = selectedId === currentQ.id;
+
+  if (correct) {
+    state.quizCorrect++;
+    state.quizStreak++;
+    btn.className = 'option-btn correct';
+  } else {
+    state.quizWrong++;
+    state.quizStreak = 0;
+    btn.className = 'option-btn wrong';
+    // Show correct
+    document.querySelectorAll('.option-btn').forEach(b => {
+      if (b.textContent === currentQ.name) b.className = 'option-btn correct';
+    });
+  }
+  state.totalQuestions++;
+  const acc = Math.round(state.quizCorrect / state.totalQuestions * 100);
+  if (acc > state.bestAccuracy) state.bestAccuracy = acc;
+  
+  // Update streak
+  if (state.quizStreak > 0 && state.quizStreak % 3 === 0) {
+    state.streak = (state.streak || 0) + 1;
+  }
+
+  document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+  saveState();
+  updateQuizScoreUI();
+
+  const rev = document.getElementById('quiz-reveal');
+  rev.className = 'quiz-reveal show ' + (correct?'correct':'wrong');
+  document.getElementById('reveal-title').textContent = correct ? '🎉 Correct! — ' + currentQ.name : '❌ Incorrect — it\'s ' + currentQ.name;
+  document.getElementById('reveal-text').textContent = currentQ.desc + ' ' + currentQ.signalText;
+  document.getElementById('next-btn').className = 'next-btn show';
+  updateHomeStats();
+}
+
+function updateQuizScoreUI() {
+  document.getElementById('q-correct').textContent = state.quizCorrect;
+  document.getElementById('q-wrong').textContent = state.quizWrong;
+  document.getElementById('q-streak').textContent = state.quizStreak;
+  const total = state.quizCorrect + state.quizWrong;
+  document.getElementById('q-accuracy').textContent = total>0 ? Math.round(state.quizCorrect/total*100)+'%' : '—';
+}
+
+// ═══════════════════════════════════════════════════════
+// PROGRESS PAGE
+// ═══════════════════════════════════════════════════════
+
+function updateProgressPage() {
+  document.getElementById('prog-streak').textContent = state.streak || 0;
+  document.getElementById('prog-learned').textContent = state.learned.length + '/'+PATTERNS.length;
+  document.getElementById('prog-total-q').textContent = state.totalQuestions || 0;
+  document.getElementById('prog-accuracy').textContent = state.bestAccuracy ? state.bestAccuracy+'%' : '—';
+
+  const cats = ['single','double','triple','continuation'];
+  cats.forEach(cat => {
+    const total = PATTERNS.filter(p=>p.category===cat).length;
+    const done = state.learned.filter(id=>{ const p=PATTERNS.find(x=>x.id===id); return p&&p.category===cat; }).length;
+    const pct = total>0 ? Math.round(done/total*100) : 0;
+    document.getElementById('pct-'+cat).textContent = pct+'%';
+    document.getElementById('bar-'+cat).style.width = pct+'%';
+  });
+
+  // Accuracy ring
+  const c = document.getElementById('acc-correct') || 0;
+  const w2 = document.getElementById('acc-wrong') || 0;
+  drawAccuracyRing();
+
+  document.getElementById('leg-correct').textContent = state.quizCorrect;
+  document.getElementById('leg-wrong').textContent = state.quizWrong;
+  const t = state.quizCorrect + state.quizWrong;
+  document.getElementById('leg-acc').textContent = t>0 ? Math.round(state.quizCorrect/t*100)+'%' : '—';
+}
+
+function drawAccuracyRing() {
+  const canvas = document.getElementById('acc-ring');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio||1;
+  canvas.width = 110*dpr; canvas.height = 110*dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const cx=55,cy=55,r=40,lw=10;
+  const total = state.quizCorrect + state.quizWrong;
+  const corrFrac = total>0 ? state.quizCorrect/total : 0;
+  
+  ctx.clearRect(0,0,110,110);
+  ctx.strokeStyle='#1a2332'; ctx.lineWidth=lw;
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+  
+  if (total>0) {
+    const start = -Math.PI/2;
+    ctx.strokeStyle=BULL_COLOR; ctx.lineWidth=lw;
+    ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(cx,cy,r,start,start+Math.PI*2*corrFrac); ctx.stroke();
+    if (corrFrac<1) {
+      ctx.strokeStyle=BEAR_COLOR;
+      ctx.beginPath(); ctx.arc(cx,cy,r,start+Math.PI*2*corrFrac,start+Math.PI*2); ctx.stroke();
+    }
+  }
+  
+  ctx.fillStyle='#e8f0fe';
+  ctx.font='bold 16px Syne, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(total>0?Math.round(corrFrac*100)+'%':'—', cx, cy-6);
+  ctx.fillStyle='#4a5d73';
+  ctx.font='10px Syne, sans-serif';
+  ctx.fillText('accuracy',cx,cy+10);
+}
+
+// ═══════════════════════════════════════════════════════
+// HOME STATS
+// ═══════════════════════════════════════════════════════
+
+function updateHomeStats() {
+  document.getElementById('home-learned').textContent = state.learned.length;
+  document.getElementById('home-streak').textContent = state.streak||0;
+  const total = state.quizCorrect + state.quizWrong;
+  document.getElementById('home-accuracy').textContent = total>0?Math.round(state.quizCorrect/total*100)+'%':'—';
+  document.getElementById('streak-num-big').textContent = (state.streak||0) + ' Day Streak';
+}
+
+function updateAllUI() {
+  updateHomeStats();
+  updateQuizScoreUI();
+  renderPatterns('all');
+}
+
+// ═══════════════════════════════════════════════════════
+// QUIZ CHART DRAWING FOR QUIZ PAGE
+// ═══════════════════════════════════════════════════════
+
+// Reuse detail draw for quiz
+const origDetailFns = {...detailFns};
+Object.keys(detailFns).forEach(id => {
+  const orig = detailFns[id];
+  detailFns[id] = function(canvas) {
+    const {ctx,w,h} = setupCanvas(canvas, parseInt(canvas.style.height)||180);
+    drawGrid(ctx,w,h);
+    orig(canvas);
+  };
+});
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadState();
+  renderPatterns('all');
+  updateAllUI();
+  initQuiz();
+
+  // Resize observer for quiz canvas
+  const quizCanvas = document.getElementById('quiz-canvas');
+  if (quizCanvas) {
+    const obs = new ResizeObserver(()=>{
+      if (currentQ) { const fn=detailFns[currentQ.id]; if(fn) fn(quizCanvas); }
+    });
+    obs.observe(quizCanvas.parentElement);
+  }
+});
+
+// Handle back button for modal
+window.addEventListener('popstate', () => { closeModal(); });
+document.getElementById('pattern-modal').addEventListener('click', e=>{
+  if(e.target===document.getElementById('pattern-modal')) closeModal();
+});
+</script>
+</body>
+</html>
